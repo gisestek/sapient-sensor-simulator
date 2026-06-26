@@ -45,6 +45,14 @@ dotnet build
 dotnet test
 ```
 
+### Itsenäinen .exe
+
+```
+dotnet publish src/SapientSensorSimulator -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/win-x64
+```
+
+Tuottaa `publish/win-x64/SapientSensorSimulator.exe` — yksitiedostoinen, itsenäinen ohjelma, ei vaadi .NET-asennusta kohdekoneelta. `publish/` on `.gitignore`:ssä, koska binääri on iso (~75 MB); jaa se erikseen (esim. GitHub Release) tarvittaessa.
+
 5 testiä kattaa: Registration-sanoman pakollisten kenttien täyttymisen, DetectionReport-sanoman round-trip-serialisoinnin, simuloidun kohteen liikeradan, ja koko TCP-langan yli tapahtuvan kehystyksen/dekoodauksen.
 
 ## Tunnetut rajoitukset
