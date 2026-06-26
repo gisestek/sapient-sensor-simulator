@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>SapientSensorSimulator</RootNamespace>
+    <AssemblyName>SapientSensorSimulator</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.28.2" />
+    <PackageReference Include="Grpc.Tools" Version="2.66.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!--
+    BSI Flex 335 v2.0 message schemas, taken directly from the Apex-SAPIENT-Middleware
+    submodule so this simulator's wire format matches Apex/sapient-fusion-node exactly.
+  -->
+  <ItemGroup>
+    <Protobuf Include="..\..\external\apex\sapient_msg\proto_options.proto" ProtoRoot="..\..\external\apex" />
+    <Protobuf Include="..\..\external\apex\sapient_msg\bsi_flex_335_v2_0\*.proto" ProtoRoot="..\..\external\apex" />
+  </ItemGroup>
+
+</Project>
