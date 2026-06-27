@@ -11,7 +11,7 @@ namespace SapientSensorSimulator;
 public static class MessageFactory
 {
     public static SapientMessage BuildDetectionReport(
-        string nodeId, string objectId, double lat, double lon, double alt, double eastRate, double northRate)
+        string nodeId, string objectId, double lat, double lon, double alt, double eastRate, double northRate, double upRate = 0)
     {
         return new SapientMessage
         {
@@ -34,7 +34,7 @@ public static class MessageFactory
                 {
                     EastRate = eastRate,
                     NorthRate = northRate,
-                    UpRate = 0
+                    UpRate = upRate
                 }
             }
         };
