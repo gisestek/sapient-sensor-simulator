@@ -53,4 +53,34 @@ public class MessageFactoryTests
         Assert.Equal(3, report.EnuVelocity.EastRate, precision: 6);
         Assert.Equal(-2, report.EnuVelocity.NorthRate, precision: 6);
     }
+
+    [Fact]
+    public void BuildDetectionReport_WithoutErrors_LeavesErrorFieldsUnset()
+    {
+        var message = MessageFactory.BuildDetectionReport(
+            Guid.NewGuid().ToString(), objectId: "obj-1", lat: 60, lon: 25, alt: 10, eastRate: 0, northRate: 0);
+
+        var roundTripped = SapientMessage.Parser.ParseFrom(message.ToByteArray());
+
+        Assert.False(roundTripped.DetectionReport.Location.HasXError);
+        Assert.False(roundTripped.DetectionReport.Location.HasYError);
+        Assert.False(roundTripped.DetectionReport.Location.HasZError);
+    }
+
+    [Fact]
+    public void BuildDetectionReport_WithErrors_SetsOnlyTheProvidedOnes()
+    {
+        var message = MessageFactory.BuildDetectionReport(
+            Guid.NewGuid().ToString(), objectId: "obj-1", lat: 60, lon: 25, alt: 10, eastRate: 0, northRate: 0,
+            xErrorDeg: 0.001, zErrorMetres: 5.0); // yError intentionally omitted
+
+        var roundTripped = SapientMessage.Parser.ParseFrom(message.ToByteArray());
+        var location = roundTripped.DetectionReport.Location;
+
+        Assert.True(location.HasXError);
+        Assert.Equal(0.001, location.XError, precision: 9);
+        Assert.False(location.HasYError);
+        Assert.True(location.HasZError);
+        Assert.Equal(5.0, location.ZError, precision: 6);
+    }
 }

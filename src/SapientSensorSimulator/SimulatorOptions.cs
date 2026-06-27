@@ -15,6 +15,33 @@ public sealed class SimulatorOptions
     /// NorthRate, UpRate (all metres / metres-per-second, applied before the lat/lon conversion).</summary>
     public Dictionary<string, FieldNoise> NoiseSpecs { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Explicit "--error field:magnitude" overrides (metres), keyed East/North/Altitude.
+    /// When set for a field, this is reported as the Location x/y/z_error regardless of whatever
+    /// noise is (or isn't) configured for that field — "fixed" mode. Without an override, the
+    /// reported error is derived automatically from the field's own noise magnitude, if any
+    /// ("auto" mode, the default) — see <see cref="ResolveReportedErrorMetres"/>.</summary>
+    public Dictionary<string, double> FixedErrors { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The position error (metres) to report for a given ENU field ("East"/"North"/"Altitude"),
+    /// or null to report none. Fixed override takes precedence; otherwise falls back to the
+    /// field's own noise magnitude (Gaussian std. deviation / Uniform half-range / Systematic
+    /// amplitude all serve as a reasonable reported error). No noise and no override means no
+    /// error is reported for that field, same as before this feature existed.</summary>
+    public double? ResolveReportedErrorMetres(string field)
+    {
+        if (FixedErrors.TryGetValue(field, out var fixedValue))
+        {
+            return fixedValue;
+        }
+
+        if (NoiseSpecs.TryGetValue(field, out var noise) && noise.Kind != NoiseKind.None)
+        {
+            return Math.Abs(noise.Magnitude);
+        }
+
+        return null;
+    }
+
     public static SimulatorOptions? Parse(string[] args)
     {
         string? host = null;
@@ -25,6 +52,7 @@ public sealed class SimulatorOptions
         var originLon = 24.9384;
         var nodeName = "Sapient Sensor Simulator";
         var noiseSpecs = new Dictionary<string, FieldNoise>(StringComparer.OrdinalIgnoreCase);
+        var fixedErrors = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -63,6 +91,18 @@ public sealed class SimulatorOptions
                     }
 
                     break;
+                case "--error" when i + 1 < args.Length:
+                    var errorParts = args[++i].Split(':');
+                    if (errorParts.Length == 2 && double.TryParse(errorParts[1], System.Globalization.CultureInfo.InvariantCulture, out var magnitude))
+                    {
+                        fixedErrors[errorParts[0]] = magnitude;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Ignoring malformed --error value (expected field:magnitude): {args[i]}");
+                    }
+
+                    break;
                 case "--help":
                 case "-h":
                     return null;
@@ -83,7 +123,8 @@ public sealed class SimulatorOptions
             OriginLat = originLat,
             OriginLon = originLon,
             NodeName = nodeName,
-            NoiseSpecs = noiseSpecs
+            NoiseSpecs = noiseSpecs,
+            FixedErrors = fixedErrors
         };
     }
 
@@ -119,6 +160,14 @@ public sealed class SimulatorOptions
                                                         amplitude, driven by wall-clock time —
                                                         "säännönmukaista", not random)
                                     Example: --noise East:Gaussian:2.5 --noise Altitude:Systematic:1.0
+              --error field:magnitude (metres)
+                                    Reports this as the Location x/y/z_error for East/North/Altitude
+                                    ("fixed" mode), overriding the automatic default. Without
+                                    --error, a field with --noise configured reports that noise's
+                                    own magnitude as its error automatically ("auto" mode); a field
+                                    with neither reports no error at all, same as before this option
+                                    existed. Repeatable, one per field.
+                                    Example: --error East:5.0 --error North:5.0
             """);
     }
 }

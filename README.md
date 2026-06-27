@@ -36,6 +36,13 @@ Vaihtoehdot:
                               Systematic  (magnitude = deterministisen sinikäyrän amplitudi,
                                            ajettu seinäkellon mukaan — "säännönmukaista", ei satunnaista)
                       Esim: --noise East:Gaussian:2.5 --noise Altitude:Systematic:1.0
+--error field:magnitude (metriä)
+                      Asettaa raportoidun Location x/y/z_error -arvon ("fixed"-tila), ohittaen
+                      automaattisen oletuksen. Ilman --error: kenttä jolla on --noise raportoi
+                      automaattisesti sen kohinan oman magnitudin epävarmuutena ("auto"-tila,
+                      oletus); kenttä jolla ei ole kumpaakaan ei raportoi epävarmuutta lainkaan.
+                      Toistettavissa, yksi per kenttä. Kentät: East, North, Altitude.
+                      Esim: --error East:5.0 --error North:5.0
 ```
 
 ## Testaus yhdessä sapient-fusion-noden kanssa
@@ -63,7 +70,7 @@ dotnet publish src/SapientSensorSimulator -c Release -r win-x64 --self-contained
 
 Tuottaa `publish/win-x64/SapientSensorSimulator.exe` — yksitiedostoinen, itsenäinen ohjelma, ei vaadi .NET-asennusta kohdekoneelta. `publish/` on `.gitignore`:ssä, koska binääri on iso (~75 MB); jaa se erikseen (esim. GitHub Release) tarvittaessa.
 
-20 testiä kattaa: Registration-sanoman pakollisten kenttien täyttymisen, DetectionReport-sanoman round-trip-serialisoinnin, simuloidun kohteen liikeradan (mukaan lukien determinismi: sama aika+parametrit → sama tulos eri instansseissa), kohinageneraattorin kaikki kolme tyyppiä, `--noise`-argumentin jäsennyksen, ja koko TCP-langan yli tapahtuvan kehystyksen/dekoodauksen.
+29 testiä kattaa: Registration-sanoman pakollisten kenttien täyttymisen, DetectionReport-sanoman round-trip-serialisoinnin (mukaan lukien x/y/z_error-kenttien Has*-lippujen oikeellisuus), simuloidun kohteen liikeradan (mukaan lukien determinismi: sama aika+parametrit → sama tulos eri instansseissa), kohinageneraattorin kaikki kolme tyyppiä, `--noise`/`--error`-argumenttien jäsennyksen ja auto/fixed-päättelyn, ja koko TCP-langan yli tapahtuvan kehystyksen/dekoodauksen.
 
 ## Tunnetut rajoitukset
 
@@ -71,4 +78,4 @@ Tuottaa `publish/win-x64/SapientSensorSimulator.exe` — yksitiedostoinen, itsen
 - Ei lähetä `StatusReport`-heartbeat-sanomia.
 - Kohteet liikkuvat aina täydellistä ympyrää — ei realistisempia liikeratamalleja.
 - Vain `BSI Flex 335 v2.0` / Proto-formaatti, ei XML- tai v1.0-tukea.
-- Kohinaa ei raportoida `Location`-sanoman `x_error`/`y_error`/`z_error`-kenttiin, vaikka esim. Gaussian-kohinan keskihajonta olisi luonnollinen arvo niihin — fuusionoden epävarmuusikkuna/Kalman-painotus ei siis tällä hetkellä näe simulaattorin lisäämää kohinatasoa, vaikka data itse on kohinaista.
+- `--error`/auto-epävarmuus kattaa vain `East`/`North`/`Altitude` (→ Location x/y/z_error) — ei `EastRate`/`NorthRate`/`UpRate`-kenttien epävarmuutta (SAPIENT-skeemassa ei ole vastaavia velocity_error-kenttiä `ENUVelocity`-sanomassa).

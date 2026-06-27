@@ -40,4 +40,13 @@ public sealed class SimulatedTarget
         var lon = originLonDeg + east / (EarthRadiusMetres * Math.Cos(originLatDeg * Math.PI / 180.0)) * 180.0 / Math.PI;
         return (lat, lon);
     }
+
+    /// <summary>Converts a north-south distance to the equivalent latitude span — for reporting
+    /// a metres-based error as Location.y_error, which is in the same unit as Location.Y (degrees).</summary>
+    public static double MetresToDegreesLat(double metres) => metres / EarthRadiusMetres * 180.0 / Math.PI;
+
+    /// <summary>Converts an east-west distance to the equivalent longitude span at the given
+    /// latitude — for reporting a metres-based error as Location.x_error.</summary>
+    public static double MetresToDegreesLon(double metres, double atLatitudeDeg) =>
+        metres / (EarthRadiusMetres * Math.Cos(atLatitudeDeg * Math.PI / 180.0)) * 180.0 / Math.PI;
 }

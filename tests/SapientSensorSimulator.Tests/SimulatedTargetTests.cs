@@ -65,4 +65,27 @@ public class SimulatedTargetTests
         Assert.True(lon > 25.0);
         Assert.Equal(60.0, lat, precision: 6);
     }
+
+    [Fact]
+    public void MetresToDegreesLat_RoundTripsWithToLatLon()
+    {
+        const double north = 1234.0;
+        var errorDeg = SimulatedTarget.MetresToDegreesLat(north);
+
+        var (lat, _) = SimulatedTarget.ToLatLon(originLatDeg: 60.0, originLonDeg: 25.0, east: 0, north: north);
+
+        Assert.Equal(lat - 60.0, errorDeg, precision: 9);
+    }
+
+    [Fact]
+    public void MetresToDegreesLon_RoundTripsWithToLatLon()
+    {
+        const double east = 1234.0;
+        const double originLat = 60.0;
+        var errorDeg = SimulatedTarget.MetresToDegreesLon(east, originLat);
+
+        var (_, lon) = SimulatedTarget.ToLatLon(originLatDeg: originLat, originLonDeg: 25.0, east: east, north: 0);
+
+        Assert.Equal(lon - 25.0, errorDeg, precision: 9);
+    }
 }

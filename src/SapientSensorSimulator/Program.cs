@@ -28,6 +28,11 @@ if (options.NoiseSpecs.Count > 0)
     Console.WriteLine($"Noise: {string.Join(", ", options.NoiseSpecs.Values.Select(n => $"{n.Field}={n.Kind}({n.Magnitude})"))}");
 }
 
+if (options.FixedErrors.Count > 0)
+{
+    Console.WriteLine($"Fixed reported error: {string.Join(", ", options.FixedErrors.Select(kv => $"{kv.Key}={kv.Value}m"))}");
+}
+
 using var client = new TcpClient();
 await client.ConnectAsync(options.Host, options.Port);
 var stream = client.GetStream();
@@ -60,7 +65,18 @@ while (!cts.IsCancellationRequested)
         upRate = NoiseGenerator.Apply(upRate, options.NoiseSpecs.GetValueOrDefault("UpRate"), absoluteSeconds);
 
         var (lat, lon) = SimulatedTarget.ToLatLon(options.OriginLat, options.OriginLon, east, north);
-        var message = MessageFactory.BuildDetectionReport(nodeId, target.ObjectId, lat, lon, alt, eastRate, northRate, upRate);
+
+        // Reported uncertainty: "auto" (derived from this field's own noise) unless a --error
+        // override fixes it. Location's x/y_error are in the same unit as X/Y (degrees), so the
+        // metres-based East/North error needs converting; z_error is already metres like Z.
+        var eastErrorM = options.ResolveReportedErrorMetres("East");
+        var northErrorM = options.ResolveReportedErrorMetres("North");
+        var altErrorM = options.ResolveReportedErrorMetres("Altitude");
+        var xErrorDeg = eastErrorM.HasValue ? SimulatedTarget.MetresToDegreesLon(eastErrorM.Value, options.OriginLat) : (double?)null;
+        var yErrorDeg = northErrorM.HasValue ? SimulatedTarget.MetresToDegreesLat(northErrorM.Value) : (double?)null;
+
+        var message = MessageFactory.BuildDetectionReport(
+            nodeId, target.ObjectId, lat, lon, alt, eastRate, northRate, upRate, xErrorDeg, yErrorDeg, altErrorM);
         await SendAsync(stream, message);
     }
 

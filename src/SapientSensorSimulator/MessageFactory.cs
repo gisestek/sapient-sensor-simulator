@@ -11,8 +11,24 @@ namespace SapientSensorSimulator;
 public static class MessageFactory
 {
     public static SapientMessage BuildDetectionReport(
-        string nodeId, string objectId, double lat, double lon, double alt, double eastRate, double northRate, double upRate = 0)
+        string nodeId, string objectId, double lat, double lon, double alt, double eastRate, double northRate, double upRate = 0,
+        double? xErrorDeg = null, double? yErrorDeg = null, double? zErrorMetres = null)
     {
+        var location = new Location
+        {
+            X = lon,
+            Y = lat,
+            Z = alt,
+            CoordinateSystem = LocationCoordinateSystem.LatLngDegM,
+            Datum = LocationDatum.Wgs84E
+        };
+
+        // Only set when provided: assigning a proto3 "optional" field flips its Has* flag, so a
+        // report with no configured error should have none of x/y/z_error set at all, not zero.
+        if (xErrorDeg.HasValue) location.XError = xErrorDeg.Value;
+        if (yErrorDeg.HasValue) location.YError = yErrorDeg.Value;
+        if (zErrorMetres.HasValue) location.ZError = zErrorMetres.Value;
+
         return new SapientMessage
         {
             Timestamp = Timestamp.FromDateTime(DateTime.UtcNow),
@@ -22,14 +38,7 @@ public static class MessageFactory
                 ReportId = Guid.NewGuid().ToString(),
                 ObjectId = objectId,
                 DetectionConfidence = 1.0f,
-                Location = new Location
-                {
-                    X = lon,
-                    Y = lat,
-                    Z = alt,
-                    CoordinateSystem = LocationCoordinateSystem.LatLngDegM,
-                    Datum = LocationDatum.Wgs84E
-                },
+                Location = location,
                 EnuVelocity = new ENUVelocity
                 {
                     EastRate = eastRate,
